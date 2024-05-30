@@ -9,83 +9,53 @@ block chain
  To be able to execute this application, you may use Remix, an online Solidity IDE, which can be found at https://remix.ethereum.org/.
 
  Create a new file on the Remix website by clicking the "+" symbol in the left-hand sidebar. Save the file as Phoenixtoken.sol . Insert the following code into the file:
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
 
-contract Assessment {
-    address payable public owner;
-    uint256 public balance;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    event Deposit(address indexed sender, uint256 amount);
-    event Withdraw(address indexed recipient, uint256 amount);
-    event Transfer(address indexed sender, address indexed recipient, uint256 amount);
-    event BalanceIncreased(address indexed owner, uint256 amount);
+// ERC20 contract with mint, burn, transfer, redeem, and check balance
+contract DegenToken is ERC20, Ownable {
+    // Mapping to store the prices of each shoe item
+    mapping(uint256 => uint256) public itemPrices;
 
-    constructor(uint256 initBalance) payable {
-        owner = payable(msg.sender);
-        balance = initBalance;
+    constructor() ERC20("Degen", "DGN") Ownable(msg.sender) {
+        _mint(msg.sender, 1000000 * 10 ** uint(decimals()));
+
+        // Add some shoe items and their prices
+        itemPrices[1] = 100; // Item ID: 1, Price: 100 tokens
+        itemPrices[2] = 150; // Item ID: 2, Price: 150 tokens
+        itemPrices[3] = 200; // Item ID: 3, Price: 200 tokens
     }
 
-    function getBalance() public view returns(uint256) {
-        return balance;
+    function mint(address account, uint256 amount) public {
+        require(msg.sender == owner(), "Only owner can mint new tokens");
+        _mint(account, amount);
     }
 
-    function deposit(uint256 _amount) public payable {
-        // make sure this is the owner
-        require(msg.sender == owner, "You are not the owner of this account");
-
-        // perform transaction
-        balance += _amount;
-
-        // emit the event
-        emit Deposit(msg.sender, _amount);
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
     }
 
-    // custom error
-    error InsufficientBalance(uint256 balance, uint256 withdrawAmount);
-
-    function withdraw(uint256 _withdrawAmount) public {
-        require(msg.sender == owner, "You are not the owner of this account");
-
-        if (balance < _withdrawAmount) {
-            revert InsufficientBalance({
-                balance: balance,
-                withdrawAmount: _withdrawAmount
-            });
-        }
-
-        // withdraw the given amount
-        balance -= _withdrawAmount;
-
-        // emit the event
-        emit Withdraw(msg.sender, _withdrawAmount);
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        require(to != address(0), "ERC20: transfer to the zero address");
+        return super.transfer(to, amount);
     }
 
-    function transfer(address payable _recipient, uint256 _amount) public {
-        require(msg.sender == owner, "You are not the owner of this account");
-        require(_recipient != address(0), "Invalid recipient address");
-        require(_amount > 0, "Amount must be greater than zero");
-        require(balance >= _amount, "Insufficient balance");
-
-        // transfer funds
-        _recipient.transfer(_amount);
-
-        // update balance
-        balance -= _amount;
-
-        // emit the event
-        emit Transfer(msg.sender, _recipient, _amount);
+    // Redeem items by burning tokens
+    function redeem(uint256 itemId) public {
+        uint256 price = itemPrices[itemId];
+        require(price > 0, "Item not available for redemption");
+        require(balanceOf(msg.sender) >= price, "Insufficient balance");
+        _burn(msg.sender, price);
     }
 
-    function increaseBalance(uint256 _amount) public {
-        require(msg.sender == owner, "You are not the owner of this account");
-        require(_amount > 0, "Amount must be greater than zero");
-
-        balance += _amount;
-
-        emit BalanceIncreased(owner, _amount);
+    function balanceOf(address account) public view virtual override returns (uint256) {
+        return super.balanceOf(account);
     }
 }
+
 
 Authors
 Jorge ramiscal
