@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract DegenToken is ERC20, Ownable {
     // Mapping to store the prices of each shoe item
     mapping(uint256 => uint256) public itemPrices;
+    event ItemRedeemed(address indexed user, uint256 indexed itemId);
 
     constructor() ERC20("Degen", "DGN") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** uint(decimals()));
@@ -37,6 +38,7 @@ contract DegenToken is ERC20, Ownable {
         uint256 price = itemPrices[itemId];
         require(price > 0, "Item not available for redemption");
         require(balanceOf(msg.sender) >= price, "Insufficient balance");
+         emit ItemRedeemed(msg.sender, itemId); // Emit event to log the redemption
         _burn(msg.sender, price);
     }
 
